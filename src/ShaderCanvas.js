@@ -35,18 +35,31 @@ function devicePixelRatio() {
 }
 
 const vertexShader = `
-  void main() {
-    gl_Position = vec4(position, 1.0);
-  }
+	#version 300 es
+	#define POSITION_LOCATION 0
+	#define TEXCOORD_LOCATION 4
+	
+	precision highp float;
+	precision highp int;
+	uniform mat4 MVP;
+	layout(location = POSITION_LOCATION) in vec2 position;
+	layout(location = TEXCOORD_LOCATION) in vec2 texcoord;
+	out vec2 v_st;
+	void main()
+	{
+		v_st = texcoord;
+		gl_Position = MVP * vec4(position, 0.0, 1.0);
+	}
 `;
 
-const defaultUniforms = `
-  uniform vec2 iResolution;
-  uniform vec2 iMouse;
-  uniform float iGlobalTime;
-  uniform vec2 u_resolution;
-  uniform vec2 u_mouse;
+const fragmentShaderHead = `
+  #version 300 es
+  uniform ivec2 u_extent;
+  uniform ivec2 u_mouse;
   uniform float u_time;
+  
+	in vec2 v_st;
+	out vec4 color;
 `;
 
 export default class ShaderCanvas {
@@ -71,6 +84,7 @@ export default class ShaderCanvas {
       throw new Error("error loading texture " + textureURL);
     };
 
+	
     this.renderer = new WebGLRenderer({canvas: this.domElement});
     this.renderer.setPixelRatio(devicePixelRatio());
 
@@ -115,7 +129,7 @@ export default class ShaderCanvas {
     this.mesh.material = new ShaderMaterial({
       uniforms: this.uniforms,
       vertexShader: vertexShader,
-      fragmentShader: defaultUniforms + source,
+      fragmentShader: fragmentShaderHead + source,
     });
 
     this.scene.add(this.mesh); // idempotent
